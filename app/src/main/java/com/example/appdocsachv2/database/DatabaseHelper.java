@@ -1,12 +1,22 @@
 package com.example.appdocsachv2.database;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+    private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "BookApp.db";
     private static final int DATABASE_VERSION = 2; // Tăng version để áp dụng nâng cấp
+    // Tên bảng và cột
+    public static final String TABLE_USER = "User";
+    public static final String COLUMN_USERNAME = "username";
+    public static final String COLUMN_PASSWORD = "password";
+    public static final String COLUMN_EMAIL = "email";
 
     // Tạo bảng User
     private static final String CREATE_TABLE_USER = "CREATE TABLE IF NOT EXISTS User (" +
@@ -66,19 +76,46 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_TABLE_USER);
-        db.execSQL(CREATE_TABLE_BOOK);
-        db.execSQL(CREATE_TABLE_CHAPTER);
-        db.execSQL(CREATE_TABLE_FAVORITE_BOOK);
-        db.execSQL(CREATE_TABLE_READING_PROGRESS);
+        Log.d(TAG, "User table created");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2) {
-            // Thêm cột summary vào bảng Book nếu chưa tồn tại
-            db.execSQL("ALTER TABLE Book ADD COLUMN summary TEXT");
+//        if (oldVersion < 2) {
+//            // Thêm cột summary vào bảng Book nếu chưa tồn tại
+//            db.execSQL("ALTER TABLE Book ADD COLUMN summary TEXT");
+//        }
+//        // Thêm các nâng cấp khác nếu có trong tương lai
+//        // Ví dụ: nếu cần thêm cột mới hoặc thay đổi cấu trúc khác
+    }
+    // Hàm này đảm bảo tài khoản admin tồn tại
+    public void ensureDefaultAdminExists() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_USER + " WHERE " + COLUMN_USERNAME + " = ?", new String[]{"admin"});
+        if (cursor != null) {
+            if (cursor.moveToFirst() && cursor.getInt(0) == 0) {
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_USERNAME, "admin");
+                values.put(COLUMN_PASSWORD, "123456");
+                values.put(COLUMN_EMAIL, "admin@example.com");
+                long result = db.insert(TABLE_USER, null, values);
+                Log.d(TAG, result != -1 ? "Tài khoản admin đã được tạo." : "Tạo admin thất bại.");
+            } else {
+                Log.d(TAG, "Tài khoản admin đã tồn tại.");
+            }
+            cursor.close();
         }
-        // Thêm các nâng cấp khác nếu có trong tương lai
-        // Ví dụ: nếu cần thêm cột mới hoặc thay đổi cấu trúc khác
+    }
+
+    //  Hàm kiểm tra đăng nhập
+    public boolean checkUserLogin(String username, String password) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM " + TABLE_USER + " WHERE " + COLUMN_USERNAME + " = ? AND " + COLUMN_PASSWORD + " = ?",
+                new String[]{username, password}
+        );
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
     }
 }

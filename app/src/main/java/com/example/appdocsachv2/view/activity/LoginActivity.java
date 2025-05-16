@@ -13,11 +13,14 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.appdocsachv2.MainActivity;
 import com.example.appdocsachv2.R;
+import com.example.appdocsachv2.database.DatabaseHelper;
 
 public class LoginActivity extends AppCompatActivity {
     Button btndang_nhap, btndang_ky;
     EditText edtTen_dang_nhap, edtmatkhau;
+    DatabaseHelper dbHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,6 +31,8 @@ public class LoginActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        dbHelper = new DatabaseHelper(this);
+        dbHelper.ensureDefaultAdminExists();
         btndang_nhap = findViewById(R.id.btndang_nhap);
         btndang_ky = findViewById(R.id.btndang_ky);
         edtTen_dang_nhap = findViewById(R.id.edtTen_dang_nhap);
@@ -38,9 +43,16 @@ public class LoginActivity extends AppCompatActivity {
                 String ten = edtTen_dang_nhap.getText().toString().trim();
                 String mk = edtmatkhau.getText().toString().trim();
 
-                if (ten.equals("admin") && mk.equals("123456")) {
+                if (ten.isEmpty() || mk.isEmpty()) {
+                    Toast.makeText(LoginActivity.this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (dbHelper.checkUserLogin(ten, mk)) {
                     Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                    // Có thể chuyển sang màn hình khác ở đây
+                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                    startActivity(intent);
+                    finish();
                 } else {
                     Toast.makeText(LoginActivity.this, "Sai tên hoặc mật khẩu!", Toast.LENGTH_SHORT).show();
                 }
